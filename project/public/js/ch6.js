@@ -32,7 +32,7 @@ $("body").append(`
                 </div>
 
                 <div class="welcome-title">
-                    Hi! I'm your assistant
+                    Hi! I'm your FrapAI
                 </div>
 
                 <div class="welcome-text">
