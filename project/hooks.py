@@ -317,9 +317,5 @@ require_type_annotated_api_methods = True
 
 
 
-
-
-
-
-app_include_js = "/assets/project/js/bot.js"
+app_include_js = "/assets/project/js/chatbot.js"
 

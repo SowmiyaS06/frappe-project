@@ -69,12 +69,10 @@ $("#chatbot-button").css({
     position: "fixed",
     bottom: "15px",
     right: "15px",
-    width: "130px",
-    height: "130px",
+    width: "90px",
+    height: "90px",
     "z-index": "9999",
     cursor: "pointer",
-
-    /* Floating animation */
     animation: "chatbot-float 2.5s ease-in-out infinite"
 });
 
@@ -118,7 +116,7 @@ $("<style>")
 
 $("#chatbot-panel").css({
     position: "fixed",
-    bottom: "155px",
+    bottom: "115px",
     right: "25px",
     width: "360px",
     height: "430px",
@@ -244,31 +242,17 @@ $("#chatbot-send").css({
    ============================================================ */
 
 function toggleChatbot() {
-
     $("#chatbot-panel").toggle();
-
 }
 
 
-/* ============================================================
-   CLICK CHATBOT IMAGE
-   ============================================================ */
-
 $("#chatbot-button").on("click", function () {
-
     toggleChatbot();
-
 });
 
 
-/* ============================================================
-   CLOSE CHATBOT
-   ============================================================ */
-
 $("#chatbot-close").on("click", function () {
-
     $("#chatbot-panel").hide();
-
 });
 
 
@@ -294,25 +278,21 @@ $(document).on("keydown", function (e) {
    ============================================================ */
 
 /*
-    Your images should be:
+    Frame order:
 
-    /assets/project/images/frame_01.png
-    /assets/project/images/frame_02.png
-    /assets/project/images/frame_03.png
-    /assets/project/images/frame_04.png
-    /assets/project/images/frame_05.png
-    /assets/project/images/frame_06.png
-    /assets/project/images/frame_07.png
-    /assets/project/images/frame_08.png
-    /assets/project/images/frame_09.png
-    /assets/project/images/frame_10.png
-    /assets/project/images/frame_11.png
-    /assets/project/images/frame_12.png
-    /assets/project/images/frame_13.png
-
-    frame_01 = fully open
-    frame_07 = fully closed
-    frame_13 = fully open
+    frame_01.png = fully open
+    frame_02.png
+    frame_03.png
+    frame_04.png
+    frame_05.png
+    frame_06.png
+    frame_07.png = fully closed
+    frame_08.png
+    frame_09.png
+    frame_10.png
+    frame_11.png
+    frame_12.png
+    frame_13.png = fully open
 */
 
 
@@ -336,7 +316,7 @@ const chatbotFrames = [
 
 
 /* ============================================================
-   PRELOAD BLINK FRAMES
+   PRELOAD ALL FRAMES
    ============================================================ */
 
 chatbotFrames.forEach(function (src) {
@@ -357,9 +337,7 @@ function blink() {
     const image = $("#chatbot-image");
 
 
-    /*
-        Start with fully-open eyes.
-    */
+    /* Frame 01 - fully open */
 
     image.attr(
         "src",
@@ -367,9 +345,7 @@ function blink() {
     );
 
 
-    /*
-        Frame 02
-    */
+    /* Frame 02 */
 
     setTimeout(function () {
 
@@ -381,9 +357,7 @@ function blink() {
     }, 70);
 
 
-    /*
-        Frame 03
-    */
+    /* Frame 03 */
 
     setTimeout(function () {
 
@@ -395,9 +369,7 @@ function blink() {
     }, 130);
 
 
-    /*
-        Frame 04
-    */
+    /* Frame 04 */
 
     setTimeout(function () {
 
@@ -409,9 +381,7 @@ function blink() {
     }, 190);
 
 
-    /*
-        Frame 05
-    */
+    /* Frame 05 */
 
     setTimeout(function () {
 
@@ -423,9 +393,7 @@ function blink() {
     }, 250);
 
 
-    /*
-        Frame 06
-    */
+    /* Frame 06 */
 
     setTimeout(function () {
 
@@ -437,10 +405,7 @@ function blink() {
     }, 310);
 
 
-    /*
-        Frame 07
-        Fully closed.
-    */
+    /* Frame 07 - fully closed */
 
     setTimeout(function () {
 
@@ -452,10 +417,7 @@ function blink() {
     }, 370);
 
 
-    /*
-        Frame 08
-        Start opening.
-    */
+    /* Frame 08 */
 
     setTimeout(function () {
 
@@ -467,9 +429,7 @@ function blink() {
     }, 450);
 
 
-    /*
-        Frame 09
-    */
+    /* Frame 09 */
 
     setTimeout(function () {
 
@@ -481,9 +441,7 @@ function blink() {
     }, 530);
 
 
-    /*
-        Frame 10
-    */
+    /* Frame 10 */
 
     setTimeout(function () {
 
@@ -495,9 +453,7 @@ function blink() {
     }, 610);
 
 
-    /*
-        Frame 11
-    */
+    /* Frame 11 */
 
     setTimeout(function () {
 
@@ -509,9 +465,7 @@ function blink() {
     }, 690);
 
 
-    /*
-        Frame 12
-    */
+    /* Frame 12 */
 
     setTimeout(function () {
 
@@ -523,10 +477,7 @@ function blink() {
     }, 770);
 
 
-    /*
-        Frame 13
-        Fully open again.
-    */
+    /* Frame 13 - fully open */
 
     setTimeout(function () {
 
@@ -552,7 +503,7 @@ setInterval(function () {
 
 
 /* ============================================================
-   INITIAL FRAME
+   INITIAL FULLY OPEN FRAME
    ============================================================ */
 
 $("#chatbot-image").attr(
@@ -588,7 +539,7 @@ $("#chatbot-input").on("keypress", function (e) {
 
 
 /* ============================================================
-   SEND MESSAGE FUNCTION
+   SEND MESSAGE
    ============================================================ */
 
 async function sendMessage() {
@@ -653,7 +604,7 @@ async function sendMessage() {
 
 
         /* ====================================================
-           CALL BACKEND
+           BACKEND CALL
            ==================================================== */
 
         let response = await new Promise(
@@ -664,9 +615,7 @@ async function sendMessage() {
                     method: "project.api.chat",
 
                     args: {
-
                         message: message
-
                     },
 
                     callback: function (response) {
@@ -733,13 +682,9 @@ async function sendMessage() {
            ==================================================== */
 
         if (
-
             data.recommendations &&
-
             data.recommendations.length > 0
-
         ) {
-
 
             data.recommendations.forEach(
                 function (recommendation) {
@@ -770,7 +715,6 @@ async function sendMessage() {
 
 
     } catch (error) {
-
 
         loadingMessage.remove();
 
@@ -807,9 +751,7 @@ function scrollChat() {
 
 
     chatBody.scrollTop(
-
         chatBody[0].scrollHeight
-
     );
 
 }
