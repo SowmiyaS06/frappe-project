@@ -1,6 +1,9 @@
+import json
+
 from project.embeddings.embedder import CodeEmbedder
 from project.indexer.db import fetch_all
 from project.retrieval.vector_store import VectorStore
+
 
 DB_PATH = "/Users/poojashivakumar16/benches/ai-bench/code_index.sqlite3"
 BATCH_SIZE = 32
@@ -48,10 +51,19 @@ def index_all_records():
             {
                 "app_name": record["app_name"],
                 "module": record["module"],
+                "doctype": record["doctype"] or "",
+                "file_path": record["file_path"],
                 "symbol_name": record["symbol_name"],
                 "unit_type": record["unit_type"],
-                "language": record["language"],
-                "file_path": record["file_path"],
+                "source_code": record["source_code"] or "",
+                "decorators": json.dumps(record["decorators"]),
+                "docstring": record["docstring"] or "",
+                "related_doctypes": json.dumps(
+                    record["related_doctypes"]
+                ),
+                "dependencies": json.dumps(
+                    record["dependencies"]
+                ),
             }
             for record in batch
         ]
@@ -67,7 +79,9 @@ def index_all_records():
             f"Indexed {min(start + BATCH_SIZE, len(records))}/{len(records)}"
         )
 
-    print(f"Finished. ChromaDB contains {store.count()} records.")
+    print(
+        f"Finished. ChromaDB contains {store.count()} records."
+    )
 
 
 if __name__ == "__main__":
