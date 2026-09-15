@@ -225,30 +225,22 @@ function blink() {
     );
 
     setTimeout(function () {
-
         $("#chatbot-image").attr(
             "src",
             chatbotFrames[1]
         );
-
     }, 120);
-
     setTimeout(function () {
-
         $("#chatbot-image").attr(
             "src",
             chatbotFrames[2]
         );
-
     }, 190);
-
     setTimeout(function () {
-
         $("#chatbot-image").attr(
             "src",
             chatbotFrames[3]
         );
-
     }, 290);
 
     setTimeout(function () {
@@ -264,125 +256,83 @@ function blink() {
 setInterval(function () {
     blink();
 }, 2500);
-
 $("#chatbot-send").on("click", function () {
     sendMessage();
 });
-
 $("#chatbot-input").on("keypress", function (e) {
-
     if (e.which === 13) {
         sendMessage();
     }
-
 });
-
 async function sendMessage() {
-
     let message = $("#chatbot-input").val().trim();
-
     if (!message) {
         return;
     }
-
     $("#chatbot-body").append(`
         <div class="user-message">
             ${message}
         </div>
     `);
-
     $("#chatbot-input").val("");
-
     scrollChat();
-
     const loadingMessage = $(`
         <div class="bot-message chatbot-loading">
-
             <span class="typing-dot"></span>
             <span class="typing-dot"></span>
             <span class="typing-dot"></span>
-
         </div>
     `);
-
     $("#chatbot-body").append(loadingMessage);
-
     scrollChat();
-
     try {
-
         let response = await new Promise((resolve, reject) => {
-
             frappe.call({
-
                 method: "project.api.chat",
-
                 args: {
                     message: message
                 },
-
                 callback: function (response) {
                     resolve(response);
                 },
-
                 error: function (error) {
                     reject(error);
                 }
-
             });
-
         });
-
         await new Promise(resolve => {
             setTimeout(resolve, 1500);
         });
-
         loadingMessage.remove();
-
         console.log(
             "Backend response:",
             response
         );
-
         let data = response.message;
-
         $("#chatbot-body").append(`
             <div class="bot-message">
                 ${data.message}
             </div>
         `);
-
         if (
             data.recommendations &&
             data.recommendations.length > 0
         ) {
-
             data.recommendations.forEach(function (recommendation) {
-
                 $("#chatbot-body").append(`
-
                     <div class="recommendation-card">
-
                         <div class="recommendation-name">
                             ${recommendation.name}
                         </div>
-
                         <div class="recommendation-reason">
                             ${recommendation.reason}
                         </div>
-
                     </div>
-
                 `);
-
             });
-
         }
-
         scrollChat();
-
     } catch (error) {
-
         loadingMessage.remove();
 
         console.error(
@@ -395,17 +345,12 @@ async function sendMessage() {
                 Sorry, something went wrong. 😕
             </div>
         `);
-
         scrollChat();
-
     }
-
 }
 
 function scrollChat() {
-
     let chatBody = $("#chatbot-body");
-
     chatBody.scrollTop(
         chatBody[0].scrollHeight
     );
@@ -414,7 +359,6 @@ function scrollChat() {
 
 $("<style>")
     .text(`
-
         .user-message {
             max-width: 75%;
             margin-left: auto;

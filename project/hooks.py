@@ -311,6 +311,4 @@ require_type_annotated_api_methods = True
 
 
 
-
-
-app_include_js = "/assets/project/js/ch6.js"
+app_include_js = "/assets/project/js/ch.js"
