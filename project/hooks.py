@@ -9,6 +9,15 @@ app_license = "mit"
 # bodies instead of form-encoded, per-key JSON-stringified values.
 use_json_request_body = True
 
+scheduler_events = {
+    "cron": {
+        "0 */8 * * *": [
+            "project.indexer.scanner_job.run_scan"
+        ],
+    },
+}
+
+
 # Apps
 # ------------------
 
@@ -311,4 +320,6 @@ require_type_annotated_api_methods = True
 
 
 
+
 app_include_js = "/assets/project/js/bot.js"
+
