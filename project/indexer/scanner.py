@@ -25,6 +25,18 @@ from project.parser.js_parser import parse_js_file
 
 SKIP_DIRS = {"node_modules", ".git", "__pycache__", "public", "www", "test", "tests"}
 
+# Official apps maintained by Frappe/the ecosystem, not custom business logic.
+# Auto-discovery skips these by default since the whole point of the tool is
+# to find reuse opportunities in code YOUR team wrote — reranking a dev's
+# requirement against frappe/erpnext internals isn't useful signal here.
+# Extend this list as needed; pass `apps=[...]` explicitly to override entirely.
+DEFAULT_CORE_APPS = {
+    "frappe", "erpnext", "hrms", "payments", "insights", "crm",
+    "helpdesk", "lms", "wiki", "drive", "erpnext_domains", "education",
+    "healthcare", "lending", "agriculture", "non_profit", "hospitality",
+    "webshop", "print_designer", "builder", "gameplan", "raven",
+}
+
 
 def _get_git_commit(app_dir):
     try:
@@ -51,27 +63,55 @@ def _infer_module(app_root, file_path):
         return None
 
 
-def list_installed_apps(bench_path):
+def list_installed_apps(bench_path, exclude_core=True, extra_exclude=None):
+    """
+    Lists apps under <bench_path>/apps.
+
+    By default, excludes well-known official Frappe-ecosystem apps
+    (DEFAULT_CORE_APPS) so a scan only picks up custom, user-written
+    apps. Pass exclude_core=False to include everything, or
+    extra_exclude={"some_app"} to skip additional apps beyond the
+    default list.
+    """
     apps_dir = os.path.join(bench_path, "apps")
     if not os.path.isdir(apps_dir):
         raise FileNotFoundError(f"No apps/ directory found under {bench_path}")
-    return sorted(
+
+    all_apps = sorted(
         name for name in os.listdir(apps_dir)
         if os.path.isdir(os.path.join(apps_dir, name))
     )
 
+    if not exclude_core:
+        return all_apps
 
-def scan_bench(bench_path, db_path, apps=None, verbose=True):
+    excluded = set(DEFAULT_CORE_APPS) | set(extra_exclude or [])
+    return [a for a in all_apps if a not in excluded]
+
+
+def scan_bench(bench_path, db_path, apps=None, exclude_core=True, extra_exclude=None, verbose=True):
     """
     Full Phase-1 scan: every installed app -> every source file ->
     structured units -> upserted into db_path.
+
+    apps: explicit list of app names to scan. If given, this is used
+          as-is and exclude_core/extra_exclude are ignored — you're
+          telling the scanner exactly what to look at.
+    exclude_core: when apps is None, auto-discovers installed apps but
+          skips DEFAULT_CORE_APPS (frappe, erpnext, hrms, etc.) so only
+          custom apps get indexed. Set False to scan everything.
+    extra_exclude: additional app names to skip beyond DEFAULT_CORE_APPS,
+          e.g. a custom app you've forked from a template and don't
+          want indexed yet.
 
     Returns a summary dict with counts per unit_type.
     """
     db.init_db(db_path)
     indexed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
     apps_dir = os.path.join(bench_path, "apps")
-    app_names = apps or list_installed_apps(bench_path)
+    app_names = apps or list_installed_apps(
+        bench_path, exclude_core=exclude_core, extra_exclude=extra_exclude
+    )
 
     summary = {"files_scanned": 0, "units_indexed": 0, "by_type": {}, "errors": []}
 
@@ -137,9 +177,15 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Scan a Frappe bench into the temporary code index.")
     ap.add_argument("bench_path", help="Path to the bench root (contains apps/)")
     ap.add_argument("--db", default="./code_index.sqlite3", help="Path to the SQLite DB")
+    ap.add_argument("--apps", nargs="*", default=None, help="Explicit app names to scan (overrides filtering)")
+    ap.add_argument("--include-core", action="store_true",
+                     help="Also scan default frappe/erpnext-ecosystem apps (skipped by default)")
     args = ap.parse_args()
 
-    result = scan_bench(args.bench_path, args.db)
+    result = scan_bench(
+        args.bench_path, args.db,
+        apps=args.apps, exclude_core=not args.include_core,
+    )
     print("\nScan summary:")
     print(f"  files scanned : {result['files_scanned']}")
     print(f"  units indexed : {result['units_indexed']}")
