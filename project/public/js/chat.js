@@ -638,131 +638,211 @@ function escapeHtml(text) {
    ============================================================ */
 
 function renderBotMessage(message) {
-    if (message === null || message === undefined) {
+
+    if (
+        message === null ||
+        message === undefined
+    ) {
         return "";
     }
 
+    let source = String(message);
+
     const codeBlocks = [];
-    let source = String(message).replace(
-        /```([^\r\n`]*)\r?\n([\s\S]*?)\r?\n?```/g,
-        function (match, language, code) {
-            const index = codeBlocks.length;
+
+
+    /* --------------------------------------------------------
+       Extract fenced code blocks first
+       -------------------------------------------------------- */
+
+    source = source.replace(
+        /```([a-zA-Z0-9_+#.-]*)[ \t]*\n([\s\S]*?)```/g,
+        function (
+            match,
+            language,
+            code
+        ) {
+
+            const index =
+                codeBlocks.length;
+
             codeBlocks.push({
-                language: language.trim() || "text",
-                code: code.replace(/\r?\n$/, "")
+                language:
+                    language || "text",
+                code:
+                    code.replace(/\n$/, "")
             });
-            return "\n___FRAPAI_CODE_" + index + "___\n";
+
+            return (
+                "\n___FRAPAI_CODE_" +
+                index +
+                "___\n"
+            );
+
         }
     );
 
-    function renderInline(text) {
-        let html = escapeHtml(text);
-        html = html.replace(/`([^`\n]+)`/g, '<span class="frapai-inline-code">$1</span>');
-        html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-        html = html.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, "<em>$1</em>");
-        html = html.replace(
-            /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-            '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
-        );
-        return html;
-    }
 
-    function renderCodeEditor(block) {
-        return '<div class="frapai-code-editor">' +
-            '<div class="frapai-code-header">' +
-            '<span class="frapai-code-language">' + escapeHtml(block.language) +
-            '</span><div class="frapai-code-actions">' +
-            '<button type="button" class="frapai-copy-code">Copy</button>' +
-            '<button type="button" class="frapai-edit-code">Edit</button>' +
-            '</div></div><pre class="frapai-code-display"><code>' +
-            escapeHtml(block.code) + '</code></pre></div>';
-    }
+    /* --------------------------------------------------------
+       Escape normal HTML
+       -------------------------------------------------------- */
 
-    const lines = source.split(/\r?\n/);
-    const output = [];
-    let index = 0;
+    let html =
+        escapeHtml(source);
 
-    while (index < lines.length) {
-        const line = lines[index];
-        if (!line.trim()) {
-            index += 1;
-            continue;
+
+    /* --------------------------------------------------------
+       Headings
+       -------------------------------------------------------- */
+
+    html = html.replace(
+        /^### (.+)$/gm,
+        "<h3>$1</h3>"
+    );
+
+    html = html.replace(
+        /^## (.+)$/gm,
+        "<h2>$1</h2>"
+    );
+
+    html = html.replace(
+        /^# (.+)$/gm,
+        "<h1>$1</h1>"
+    );
+
+
+    /* --------------------------------------------------------
+       Bold
+       -------------------------------------------------------- */
+
+    html = html.replace(
+        /\*\*(.+?)\*\*/g,
+        "<strong>$1</strong>"
+    );
+
+
+    /* --------------------------------------------------------
+       Italic
+       -------------------------------------------------------- */
+
+    html = html.replace(
+        /(?<!\*)\*([^*\n]+)\*(?!\*)/g,
+        "<em>$1</em>"
+    );
+
+
+    /* --------------------------------------------------------
+       Inline code
+       -------------------------------------------------------- */
+
+    html = html.replace(
+        /`([^`\n]+)`/g,
+        '<span class="frapai-inline-code">$1</span>'
+    );
+
+
+    /* --------------------------------------------------------
+       Numbered list
+       -------------------------------------------------------- */
+
+    html = html.replace(
+        /^(\d+)\. (.+)$/gm,
+        '<div class="frapai-list-item"><strong>$1.</strong> $2</div>'
+    );
+
+
+    /* --------------------------------------------------------
+       Bullet list
+       -------------------------------------------------------- */
+
+    html = html.replace(
+        /^[-*] (.+)$/gm,
+        '<div class="frapai-list-item">• $1</div>'
+    );
+
+
+    /* --------------------------------------------------------
+       Blockquote
+       -------------------------------------------------------- */
+
+    html = html.replace(
+        /^&gt; (.+)$/gm,
+        '<div class="frapai-blockquote">$1</div>'
+    );
+
+
+    /* --------------------------------------------------------
+       Line breaks
+       -------------------------------------------------------- */
+
+    html = html.replace(
+        /\n\n/g,
+        "<br><br>"
+    );
+
+    html = html.replace(
+        /\n/g,
+        "<br>"
+    );
+
+
+    /* --------------------------------------------------------
+       Put code blocks back
+       -------------------------------------------------------- */
+
+    codeBlocks.forEach(
+        function (
+            block,
+            index
+        ) {
+
+            const editorHtml = `
+
+                <div class="frapai-code-editor">
+
+                    <div class="frapai-code-header">
+
+                        <span class="frapai-code-language">
+                            ${escapeHtml(block.language)}
+                        </span>
+
+                        <div class="frapai-code-actions">
+
+                            <button
+                                type="button"
+                                class="frapai-copy-code">
+                                Copy
+                            </button>
+
+                            <button
+                                type="button"
+                                class="frapai-edit-code">
+                                Edit
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                    <pre class="frapai-code-display"><code>${escapeHtml(block.code)}</code></pre>
+
+                </div>
+
+            `;
+
+
+            html = html.replace(
+                "___FRAPAI_CODE_" +
+                index +
+                "___",
+                editorHtml
+            );
+
         }
+    );
 
-        const codeMatch = line.match(/^___FRAPAI_CODE_(\d+)___$/);
-        if (codeMatch) {
-            output.push(codeMatch[0]);
-            index += 1;
-            continue;
-        }
 
-        const headingMatch = line.match(/^(#{1,3})\s+(.+)$/);
-        if (headingMatch) {
-            output.push("<h" + headingMatch[1].length + ">" +
-                renderInline(headingMatch[2]) + "</h" + headingMatch[1].length + ">");
-            index += 1;
-            continue;
-        }
-
-        if (/^\|.*\|$/.test(line) && lines[index + 1] &&
-            /^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?$/.test(lines[index + 1])) {
-            const header = line.split("|").slice(1, -1);
-            const rows = [];
-            index += 2;
-            while (index < lines.length && /^\|.*\|$/.test(lines[index])) {
-                rows.push(lines[index].split("|").slice(1, -1));
-                index += 1;
-            }
-            output.push('<div class="frapai-table-wrapper"><table class="frapai-table"><thead><tr>' +
-                header.map(function (cell) { return "<th>" + renderInline(cell.trim()) + "</th>"; }).join("") +
-                "</tr></thead><tbody>" + rows.map(function (row) {
-                    return "<tr>" + row.map(function (cell) {
-                        return "<td>" + renderInline(cell.trim()) + "</td>";
-                    }).join("") + "</tr>";
-                }).join("") + "</tbody></table></div>");
-            continue;
-        }
-
-        const listMatch = line.match(/^\s*([-*]|\d+\.)\s+(.+)$/);
-        if (listMatch) {
-            const ordered = /\d+\./.test(listMatch[1]);
-            const items = [];
-            while (index < lines.length) {
-                const itemMatch = lines[index].match(/^\s*([-*]|\d+\.)\s+(.+)$/);
-                if (!itemMatch || (/\d+\./.test(itemMatch[1]) !== ordered)) {
-                    break;
-                }
-                items.push("<li>" + renderInline(itemMatch[2]) + "</li>");
-                index += 1;
-            }
-            output.push("<" + (ordered ? "ol" : "ul") + ">" + items.join("") +
-                "</" + (ordered ? "ol" : "ul") + ">");
-            continue;
-        }
-
-        if (/^>\s+/.test(line)) {
-            output.push('<div class="frapai-blockquote">' +
-            renderInline(line.replace(/^>\s+/, "")) + "</div>");
-            index += 1;
-            continue;
-        }
-
-        const paragraph = [line];
-        index += 1;
-        while (index < lines.length && lines[index].trim() &&
-            !/^#{1,3}\s+/.test(lines[index]) &&
-            !/^\s*([-*]|\d+\.)\s+/.test(lines[index]) &&
-            !/^___FRAPAI_CODE_\d+___$/.test(lines[index]) &&
-            !/^\|.*\|$/.test(lines[index])) {
-            paragraph.push(lines[index]);
-            index += 1;
-        }
-        output.push("<p>" + paragraph.map(renderInline).join("<br>") + "</p>");
-    }
-
-    return output.join("").replace(/___FRAPAI_CODE_(\d+)___/g, function (match, codeIndex) {
-        return renderCodeEditor(codeBlocks[Number(codeIndex)]);
-    });
+    return html;
 }
 
 
@@ -892,15 +972,9 @@ $(document).on(
 /* ============================================================
    OUTSIDE CLICK
    ============================================================ */
-if (window.__frapaiOutsideClickHandler) {
-    document.removeEventListener(
-        "pointerdown",
-        window.__frapaiOutsideClickHandler,
-        true
-    );
-}
-
-window.__frapaiOutsideClickHandler = function (event) {
+document.addEventListener(
+    "pointerdown",
+    function (event) {
         const panel = document.getElementById("chatbot-panel");
         const button = document.getElementById("chatbot-button");
 
@@ -928,11 +1002,7 @@ window.__frapaiOutsideClickHandler = function (event) {
 
         // Anything else → close chatbot
         closeChatbot();
-};
-
-document.addEventListener(
-    "pointerdown",
-    window.__frapaiOutsideClickHandler,
+    },
     true
 );
 
@@ -967,7 +1037,7 @@ $(document).on(
    BLINK ANIMATION
    ============================================================ */
 
-var chatbotFrames = window.__frapaiChatbotFrames = [
+const chatbotFrames = [
 
     "/assets/project/images/frame_01.png",
 
@@ -1059,11 +1129,7 @@ function playBlink() {
 }
 
 
-if (window.__frapaiBlinkInterval) {
-    clearInterval(window.__frapaiBlinkInterval);
-}
-
-window.__frapaiBlinkInterval = setInterval(
+setInterval(
     playBlink,
     2500
 );
@@ -1177,11 +1243,6 @@ $(document).on(
                 .find("code")
                 .text();
 
-        editor.data(
-            "frapaiOriginalCode",
-            code
-        );
-
 
         const textarea =
             $("<textarea>")
@@ -1263,10 +1324,13 @@ $(document).on(
             textarea.val() || "";
 
 
-        const display =
-            '<pre class="frapai-code-display"><code>' +
-            escapeHtml(code) +
-            '</code></pre>';
+        const display = `
+
+            <pre class="frapai-code-display">
+                <code>${escapeHtml(code)}</code>
+            </pre>
+
+        `;
 
 
         textarea.replaceWith(
@@ -1293,8 +1357,6 @@ $(document).on(
                 </button>
 
             `);
-
-        editor.removeData("frapaiOriginalCode");
 
     }
 );
@@ -1333,13 +1395,16 @@ $(document).on(
             );
 
         const code =
-            editor.data("frapaiOriginalCode") || "";
+            textarea.val() || "";
 
 
-        const display =
-            '<pre class="frapai-code-display"><code>' +
-            escapeHtml(code) +
-            '</code></pre>';
+        const display = `
+
+            <pre class="frapai-code-display">
+                <code>${escapeHtml(code)}</code>
+            </pre>
+
+        `;
 
 
         textarea.replaceWith(
@@ -1366,8 +1431,6 @@ $(document).on(
                 </button>
 
             `);
-
-        editor.removeData("frapaiOriginalCode");
 
     }
 );
