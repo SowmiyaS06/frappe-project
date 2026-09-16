@@ -37,6 +37,14 @@ CREATE TABLE IF NOT EXISTS code_units (
 CREATE INDEX IF NOT EXISTS idx_app_name ON code_units(app_name);
 CREATE INDEX IF NOT EXISTS idx_unit_type ON code_units(unit_type);
 CREATE INDEX IF NOT EXISTS idx_doctype ON code_units(doctype);
+
+-- Tracks the last-seen content hash per source file, so re-scans can
+-- skip files that haven't changed instead of re-parsing everything.
+CREATE TABLE IF NOT EXISTS file_state (
+    file_path       TEXT PRIMARY KEY,
+    content_hash    TEXT NOT NULL,
+    last_scanned    TEXT NOT NULL
+);
 """
 
 
@@ -91,6 +99,51 @@ def upsert_unit(conn, unit: dict):
         """,
         row,
     )
+
+
+def get_stored_hash(conn, file_path):
+    """Returns the content hash stored from the last scan of this file, or None if never scanned."""
+    row = conn.execute(
+        "SELECT content_hash FROM file_state WHERE file_path = ?", (file_path,)
+    ).fetchone()
+    return row["content_hash"] if row else None
+
+
+def update_file_state(conn, file_path, content_hash, scanned_at):
+    conn.execute(
+        """
+        INSERT INTO file_state (file_path, content_hash, last_scanned)
+        VALUES (?, ?, ?)
+        ON CONFLICT(file_path) DO UPDATE SET
+            content_hash=excluded.content_hash,
+            last_scanned=excluded.last_scanned
+        """,
+        (file_path, content_hash, scanned_at),
+    )
+
+
+def delete_units_for_file(conn, file_path):
+    """
+    Removes all previously indexed units for a file before re-parsing it.
+    Necessary because upsert alone only adds/updates units that still
+    exist — if a function was renamed or deleted, its old row would
+    otherwise linger forever as a stale, no-longer-accurate entry.
+    """
+    conn.execute("DELETE FROM code_units WHERE file_path = ?", (file_path,))
+
+
+def prune_missing_files(conn, seen_file_paths):
+    """
+    Removes units and file_state rows for any previously indexed file
+    that no longer exists on disk (deleted file, renamed app, etc).
+    seen_file_paths: the full set of file paths encountered in this scan.
+    """
+    rows = conn.execute("SELECT file_path FROM file_state").fetchall()
+    stale = [r["file_path"] for r in rows if r["file_path"] not in seen_file_paths]
+    for fp in stale:
+        conn.execute("DELETE FROM code_units WHERE file_path = ?", (fp,))
+        conn.execute("DELETE FROM file_state WHERE file_path = ?", (fp,))
+    return len(stale)
 
 
 def fetch_all(db_path):
