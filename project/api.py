@@ -4,8 +4,6 @@ import frappe  # type: ignore[import-not-found]
 from google import genai
 import json
 
-import frappe
-
 from project.retrieval.retriever import Retriever
 from project.retrieval.reranker import Reranker
 
