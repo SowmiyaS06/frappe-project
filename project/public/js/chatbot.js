@@ -533,32 +533,7 @@ if (!document.getElementById("frapai-styles")) {
             }
 
 
-            /* =================================================
-               RECOMMENDATIONS
-               ================================================= */
-
-            .recommendation-card {
-                max-width: 90%;
-                margin: 8px 0 12px;
-                padding: 12px;
-                background: #ffffff;
-                border: 1px solid #e5e7eb;
-                border-radius: 10px;
-                box-shadow:
-                    0 2px 6px
-                    rgba(0, 0, 0, 0.08);
-            }
-
-            .recommendation-name {
-                font-size: 14px;
-                font-weight: 600;
-                margin-bottom: 5px;
-            }
-
-            .recommendation-reason {
-                font-size: 12px;
-                color: #777;
-            }
+            
 
 
             /* =================================================
@@ -1528,7 +1503,6 @@ async function sendMessage() {
 
         let reply = "";
 
-        let recommendations = [];
 
 
         /*
@@ -1563,18 +1537,6 @@ async function sendMessage() {
             reply =
                 backendData.message ||
                 "";
-
-
-            if (
-                Array.isArray(
-                    backendData.recommendations
-                )
-            ) {
-
-                recommendations =
-                    backendData.recommendations;
-
-            }
 
         }
 
@@ -1626,39 +1588,9 @@ async function sendMessage() {
         `);
 
 
-        /* ----------------------------------------------------
-           Recommendations
-           ---------------------------------------------------- */
 
-        recommendations.forEach(
-            function (
-                recommendation
-            ) {
 
-                $("#chatbot-body").append(`
-
-                    <div class="recommendation-card">
-
-                        <div class="recommendation-name">
-                            ${escapeHtml(
-                                recommendation.name ||
-                                ""
-                            )}
-                        </div>
-
-                        <div class="recommendation-reason">
-                            ${escapeHtml(
-                                recommendation.reason ||
-                                ""
-                            )}
-                        </div>
-
-                    </div>
-
-                `);
-
-            }
-        );
+       
 
 
         scrollChat();
