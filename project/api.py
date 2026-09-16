@@ -1,8 +1,9 @@
 import time
 import json
-
 import frappe  # type: ignore[import-not-found]
 from google import genai
+import json
+
 
 from project.retrieval.retriever import Retriever
 from project.retrieval.reranker import Reranker
