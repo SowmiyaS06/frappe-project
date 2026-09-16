@@ -17,4 +17,4 @@ scheduler_events = {
     },
 }
 
-app_include_js = "/assets/project/js/ch1.js"
+app_include_js = "/assets/project/js/bot.js"
