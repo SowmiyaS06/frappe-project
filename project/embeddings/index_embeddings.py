@@ -26,11 +26,15 @@ Source Code:
 """.strip()
 
 
-def index_all_records():
-    records = fetch_all(DB_PATH)
+def index_all_records(db_path=DB_PATH, rebuild=True):
+    """Embed the current SQLite units into Chroma, replacing stale vectors by default."""
+    records = fetch_all(db_path)
 
     embedder = CodeEmbedder()
     store = VectorStore()
+
+    if rebuild:
+        store.rebuild_collection()
 
     for start in range(0, len(records), BATCH_SIZE):
         batch = records[start:start + BATCH_SIZE]

@@ -28,3 +28,8 @@ class VectorStore:
 
     def count(self):
         return self.collection.count()
+
+    def rebuild_collection(self):
+        """Discard stale vectors before a full SQLite-to-Chroma reindex."""
+        self.client.delete_collection(name="code_units")
+        self.collection = self.client.get_or_create_collection(name="code_units")

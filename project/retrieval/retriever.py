@@ -2,10 +2,14 @@ from project.embeddings.embedder import CodeEmbedder
 from project.retrieval.vector_store import VectorStore
 
 
+_embedder = CodeEmbedder()
+_store = VectorStore()
+
+
 class Retriever:
     def __init__(self):
-        self.embedder = CodeEmbedder()
-        self.store = VectorStore()
+        self.embedder = _embedder
+        self.store = _store
 
     def search(self, query, top_k=5):
         query_embedding = self.embedder.embed_query(query)

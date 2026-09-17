@@ -7,7 +7,8 @@
  "engine": "InnoDB",
  "field_order": [
   "query",
-  "result"
+  "retrieved_candidates",
+  "response"
  ],
  "fields": [
   {
@@ -16,16 +17,20 @@
    "label": "Query"
   },
   {
-   "fieldname": "result",
+   "fieldname": "retrieved_candidates",
    "fieldtype": "Long Text",
-   "label": "Result",
-   "read_only": 1
+   "label": "Retrieved Candidates"
+  },
+  {
+   "fieldname": "response",
+   "fieldtype": "Long Text",
+   "label": "Response"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-15 15:34:05.875097",
+ "modified": "2026-09-16 12:51:14.381798",
  "modified_by": "Administrator",
  "module": "Project",
  "name": "Logic Reuse",

@@ -1,5 +1,6 @@
 # project/indexer/scanner_job.py
 import frappe
+from project.embeddings.index_embeddings import index_all_records
 from project.indexer.scanner import scan_bench
 
 def run_scan():
@@ -16,5 +17,5 @@ def execute_scan():
     bench_path = frappe.utils.get_bench_path()
     db_path = frappe.get_site_path("private", "files", "project", "code_index.sqlite3")
     result = scan_bench(bench_path=bench_path, db_path=db_path)
+    index_all_records(db_path=db_path, rebuild=True)
     frappe.logger().info(f"Code index scan complete: {result}")
-

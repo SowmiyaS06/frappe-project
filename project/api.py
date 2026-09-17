@@ -1,8 +1,7 @@
-import time
-
-import frappe  # type: ignore[import-not-found]
-from google import genai
+import os
 import json
+import frappe  # type: ignore[import-not-found]
+from openai import OpenAI
 
 from project.retrieval.retriever import Retriever
 from project.retrieval.reranker import Reranker
@@ -14,128 +13,10 @@ def chat(message: str):
     if not message or not message.strip():
         frappe.throw("Message cannot be empty")
 
-    api_key = frappe.conf.get("gemini_api_key")
+    # --------------------------------------------------
+    # 1. RETRIEVAL
+    # --------------------------------------------------
 
-    if not api_key:
-        return {
-            "success": False,
-            "message": "Gemini API key is not configured."
-        }
-
-    try:
-
-        client = genai.Client(
-            api_key=api_key
-        )
-
-        system_instruction = """
-You are FrapAI, an AI assistant that helps users search,
-understand and work with Frappe Framework, programming code,
-documentation, APIs, commands, configuration, errors and
-technical information.
-
-Answer naturally and clearly like a modern AI assistant.
-
-Formatting rules:
-
-1. Answer the user's question directly.
-2. Keep simple questions concise.
-3. Use Markdown headings when useful.
-4. Use bullet points for lists.
-5. Use numbered lists for step-by-step instructions.
-6. Use inline code for functions, variables, filenames,
-   APIs and commands.
-7. Put all multi-line code inside Markdown fenced code blocks.
-8. Always specify the programming language for code blocks.
-9. Support Python, JavaScript, SQL, HTML, CSS, JSON, Bash,
-   Frappe code and other programming languages.
-10. If the user asks for code, provide clean usable code.
-11. Do not unnecessarily provide multiple solutions.
-12. Do not repeat the user's question.
-13. Match the amount of detail to the question.
-14. Return clean Markdown.
-15. Use tables when they make a comparison clearer.
-16. Keep explanations outside code blocks.
-17. Do not return raw HTML unless the user explicitly requests it.
-18. Preserve code indentation and always include a language after a
-    fenced code block opening.
-"""
-
-        response = None
-
-        # Retry temporarily unavailable Gemini requests
-        for attempt in range(3):
-
-            try:
-
-                response = client.models.generate_content(
-                    model="gemini-3.6-flash",
-                    contents=message,
-                    config={
-                        "system_instruction": system_instruction
-                    }
-                )
-
-                break
-
-            except Exception as e:
-
-                error_text = str(e)
-
-                is_temporary_error = (
-                    "503" in error_text
-                    or "UNAVAILABLE" in error_text.upper()
-                )
-
-                if is_temporary_error:
-
-                    if attempt < 2:
-                        time.sleep(1.5)
-                        continue
-
-                raise
-
-        if response is None:
-            return {
-                "success": False,
-                "message": "Gemini is temporarily unavailable. Please try again."
-            }
-
-        reply = response.text
-
-        if not reply:
-            return {
-                "success": False,
-                "message": "Gemini returned an empty response."
-            }
-
-        return {
-            "success": True,
-            "message": reply
-        }
-
-    except Exception as e:
-
-        frappe.log_error(
-            frappe.get_traceback(),
-            "FrapAI Gemini Error"
-        )
-
-        error_text = str(e)
-
-        if "503" in error_text or "UNAVAILABLE" in error_text.upper():
-            return {
-                "success": False,
-                "message": (
-                    "Gemini is currently experiencing high demand. "
-                    "Please try again in a moment. 😕"
-                )
-            }
-
-        return {
-            "success": False,
-            "message": "Sorry, I couldn't process your request right now. 😕"
-        }
     retriever = Retriever()
     reranker = Reranker()
 
@@ -150,38 +31,190 @@ Formatting rules:
         top_k=5
     )
 
-    recommendations = []
+    # --------------------------------------------------
+    # 2. BUILD CONTEXT FOR LLM
+    # --------------------------------------------------
 
-    for candidate in ranked:
+    context_parts = []
+
+    for index, candidate in enumerate(ranked, start=1):
+
         metadata = candidate["metadata"]
 
-        recommendations.append({
-    "app_name": metadata["app_name"],
-    "module": metadata["module"],
-    "doctype": metadata["doctype"],
-    "file_path": metadata["file_path"],
-    "symbol_name": metadata["symbol_name"],
-    "unit_type": metadata["unit_type"],
-    "source_code": metadata["source_code"],
-    "decorators": metadata["decorators"],
-    "docstring": metadata["docstring"],
-    "related_doctypes": metadata["related_doctypes"],
-    "dependencies": metadata["dependencies"],
-})
+        context_parts.append(
+            f"""
+Candidate {index}
 
-    frappe.get_doc({
-        "doctype": "Logic Reuse",
-        "query": message,
-        "result": json.dumps(
-            recommendations,
-            indent=2
-        ),
-    }).insert(ignore_permissions=True)
+App Name:
+{metadata.get("app_name", "")}
 
-    frappe.db.commit()
+Module:
+{metadata.get("module", "")}
 
-    return {
-        "success": True,
-        "message": f"Found {len(recommendations)} relevant code units.",
-        "recommendations": recommendations,
-    }
+DocType:
+{metadata.get("doctype", "")}
+
+File Path:
+{metadata.get("file_path", "")}
+
+Symbol Name:
+{metadata.get("symbol_name", "")}
+
+Unit Type:
+{metadata.get("unit_type", "")}
+
+Source Code:
+{metadata.get("source_code", "")}
+
+Decorators:
+{metadata.get("decorators", "")}
+
+Docstring:
+{metadata.get("docstring", "")}
+
+Related DocTypes:
+{metadata.get("related_doctypes", "")}
+
+Dependencies:
+{metadata.get("dependencies", "")}
+""".strip()
+        )
+
+    retrieval_context = "\n\n---\n\n".join(context_parts)
+
+    # --------------------------------------------------
+    # 3. OPENROUTER
+    # --------------------------------------------------
+
+    api_key = frappe.conf.get("openrouter_api_key")
+
+    if not api_key:
+        return {
+            "success": False,
+            "message": "OpenRouter API key is not configured."
+        }
+
+    try:
+
+        client = OpenAI(
+            api_key=api_key,
+            base_url="https://openrouter.ai/api/v1"
+        )
+
+        system_instruction = """
+You are FrapAI, an AI assistant that helps developers
+understand and reuse existing Frappe/ERPNext code.
+
+The user has provided a requirement.
+
+You are also given retrieved code candidates from the
+current Frappe codebase.
+
+Use the retrieved candidates as evidence.
+
+Do not invent existing implementations that are not present
+in the retrieved context.
+
+Analyze whether the existing code can be:
+
+1. REUSE
+2. ADAPT
+3. EXTEND
+4. BUILD NEW
+
+Explain the reasoning clearly.
+
+Mention relevant:
+
+- App
+- Module
+- DocType
+- Function/class/method
+- File path
+- Existing behavior
+- Required changes
+- Related code when relevant
+
+Return a clean, human-friendly Markdown response.
+
+Do not expose vector distances or internal retrieval scores
+unless specifically asked.
+"""
+
+        prompt = f"""
+User Requirement:
+{message}
+
+Retrieved Top-K Candidates:
+{retrieval_context}
+
+Based on the requirement and the retrieved candidates,
+provide a reuse-oriented recommendation.
+"""
+
+        # --------------------------------------------------
+        # 4. CALL OPENROUTER
+        # --------------------------------------------------
+
+        response = client.chat.completions.create(
+            model="openrouter/free",
+            messages=[
+                {
+                    "role": "system",
+                    "content": system_instruction
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
+
+        reply = response.choices[0].message.content
+
+        if not reply:
+            return {
+                "success": False,
+                "message": "OpenRouter returned an empty response."
+            }
+
+        # --------------------------------------------------
+        # 5. STORE QUERY + RETRIEVAL + LLM RESPONSE
+        # --------------------------------------------------
+
+        frappe.get_doc({
+            "doctype": "Logic Reuse",
+            "query": message,
+            "retrieved_candidates": json.dumps(
+                ranked,
+                indent=2,
+                default=str
+            ),
+            "response": reply,
+        }).insert(
+            ignore_permissions=True
+        )
+
+        frappe.db.commit()
+
+        # --------------------------------------------------
+        # 6. RETURN TO CHATBOT
+        # --------------------------------------------------
+
+        return {
+            "success": True,
+            "message": reply,
+            "recommendations": ranked,
+        }
+
+    except Exception as e:
+
+        frappe.log_error(
+            frappe.get_traceback(),
+            "FrapAI OpenRouter Error"
+        )
+
+        return {
+            "success": False,
+            "message": f"ERROR: {str(e)}"
+        }
