@@ -38,6 +38,11 @@ DEFAULT_CORE_APPS = {
     "webshop", "print_designer", "builder", "gameplan", "raven",
 }
 
+# Bump this when extraction rules change. It makes the existing incremental
+# scanner reparse every source file once, instead of retaining units produced
+# by an older parser implementation.
+INDEX_FORMAT_VERSION = "treesitter-python-v1"
+
 
 def _file_hash(file_path):
     """SHA-256 of file contents. Used to detect real content changes —
@@ -47,7 +52,7 @@ def _file_hash(file_path):
     with open(file_path, "rb") as f:
         for chunk in iter(lambda: f.read(65536), b""):
             h.update(chunk)
-    return h.hexdigest()
+    return f"{INDEX_FORMAT_VERSION}:{h.hexdigest()}"
 
 
 def _get_git_commit(app_dir):

@@ -12,6 +12,20 @@ bench get-app $URL_OF_THIS_REPO --branch develop
 bench install-app project
 ```
 
+### Reindexing after a parser update
+
+The Python indexer uses Tree-sitter. After installing or updating the app
+dependencies, run a full scan. The scheduled scan job rebuilds the Chroma
+embeddings from the same SQLite index, so retrieval does not retain stale units:
+
+```bash
+cd $PATH_TO_YOUR_BENCH
+./env/bin/pip install -e apps/project
+bench --site ai.local execute project.indexer.scanner_job.execute_scan
+bench build --app project
+bench restart
+```
+
 ### Contributing
 
 This app uses `pre-commit` for code formatting and linting. Please [install pre-commit](https://pre-commit.com/#installation) and enable it for this repository:

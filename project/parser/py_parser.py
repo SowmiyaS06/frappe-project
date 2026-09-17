@@ -1,118 +1,143 @@
-"""
-Structured-unit extraction for Python source files (Section 5).
+"""Tree-sitter based structured-unit extraction for Python source files."""
 
-Deliberately does NOT embed whole files — every function, method, and
-class becomes its own retrievable unit, each with its own docstring,
-decorators, and source snippet, per the doc's core design decision.
-"""
+from ast import literal_eval
 
-import ast
+from tree_sitter import Language, Parser
+import tree_sitter_python
 
 
 WHITELIST_DECORATOR = "frappe.whitelist"
+PYTHON_LANGUAGE = Language(tree_sitter_python.language())
 
 
-def _decorator_name(node):
-    """Best-effort stringify a decorator node: @frappe.whitelist() -> 'frappe.whitelist'"""
-    if isinstance(node, ast.Call):
-        node = node.func
-    if isinstance(node, ast.Attribute):
-        parts = []
-        while isinstance(node, ast.Attribute):
-            parts.append(node.attr)
-            node = node.value
-        if isinstance(node, ast.Name):
-            parts.append(node.id)
-        return ".".join(reversed(parts))
-    if isinstance(node, ast.Name):
-        return node.id
-    return ast.dump(node)
+def _node_text(source_bytes, node):
+    return source_bytes[node.start_byte : node.end_byte].decode("utf-8")
 
 
-def _get_source_segment(source_lines, node):
-    start = node.lineno - 1
-    end = getattr(node, "end_lineno", node.lineno)
-    return "\n".join(source_lines[start:end])
+def _decorator_name(source_bytes, decorator):
+    """Best-effort stringify a decorator: @frappe.whitelist() -> frappe.whitelist."""
+    return _node_text(source_bytes, decorator).strip().lstrip("@").split("(", 1)[0].strip()
 
 
-def _extract_calls(node):
-    """Rough dependency signal: names of functions this unit's body calls.
-    Walks node.body only — NOT decorator_list — so @frappe.whitelist()
-    doesn't itself get counted as a dependency of the function."""
+def _extract_calls(source_bytes, body):
+    """Return a lightweight call-dependency signal from a Tree-sitter body node."""
     calls = set()
-    for stmt in node.body:
-        for child in ast.walk(stmt):
-            if isinstance(child, ast.Call):
-                f = child.func
-                if isinstance(f, ast.Name):
-                    calls.add(f.id)
-                elif isinstance(f, ast.Attribute):
-                    calls.add(f.attr)
+    stack = [body]
+    while stack:
+        node = stack.pop()
+        if node.type == "call":
+            function = node.child_by_field_name("function")
+            if function:
+                if function.type == "attribute":
+                    attribute = function.child_by_field_name("attribute")
+                    calls.add(_node_text(source_bytes, attribute or function))
+                else:
+                    calls.add(_node_text(source_bytes, function))
+        stack.extend(reversed(node.named_children))
     return sorted(calls)
 
 
-def parse_python_file(file_path, app_name, module, source_text=None, git_commit=None, indexed_at=None):
-    """
-    Returns a list of structured unit dicts (Section 6 schema, minus
-    app-level fields the caller fills in) for every top-level and
-    class-level function/method in the file.
-    """
-    if source_text is None:
-        with open(file_path, "r", encoding="utf-8") as f:
-            source_text = f.read()
-
-    source_lines = source_text.splitlines()
-
+def _docstring(source_bytes, body):
+    """Read a conventional first-statement string without parsing the source with ast."""
+    if not body or not body.named_children:
+        return None
+    statement = body.named_children[0]
+    if statement.type != "expression_statement" or not statement.named_children:
+        return None
+    value = statement.named_children[0]
+    if value.type != "string":
+        return None
     try:
-        tree = ast.parse(source_text, filename=file_path)
-    except SyntaxError:
-        return []  # unparsable file — skip rather than crash the whole scan
+        return literal_eval(_node_text(source_bytes, value))
+    except (SyntaxError, ValueError):
+        return None
+
+
+def _unwrap_definition(source_bytes, node):
+    """Return (definition, decorators, source span), including decorator lines."""
+    if node.type != "decorated_definition":
+        return node, [], node
+    decorators = [
+        _decorator_name(source_bytes, child)
+        for child in node.named_children
+        if child.type == "decorator"
+    ]
+    definition = next(
+        (child for child in node.named_children if child.type in {"function_definition", "class_definition"}),
+        None,
+    )
+    return definition, decorators, node
+
+
+def parse_python_file(file_path, app_name, module, source_text=None, git_commit=None, indexed_at=None):
+    """Extract top-level functions/classes and class methods into existing code-unit records."""
+    if source_text is None:
+        with open(file_path, encoding="utf-8") as source_file:
+            source_text = source_file.read()
+
+    source_bytes = source_text.encode("utf-8")
+    tree = Parser(PYTHON_LANGUAGE).parse(source_bytes)
+    if tree.root_node.has_error:
+        return []
 
     units = []
 
-    def handle_function(node, unit_type, class_name=None):
-        decorators = [_decorator_name(d) for d in node.decorator_list]
-        is_whitelisted = any(WHITELIST_DECORATOR in d for d in decorators)
-        symbol = f"{class_name}.{node.name}" if class_name else node.name
+    def handle_function(definition, decorators, source_node, unit_type, class_name=None):
+        name = definition.child_by_field_name("name")
+        body = definition.child_by_field_name("body")
+        if not name:
+            return
+        is_whitelisted = any(WHITELIST_DECORATOR in decorator for decorator in decorators)
+        function_name = _node_text(source_bytes, name)
+        symbol = f"{class_name}.{function_name}" if class_name else function_name
         units.append({
             "app_name": app_name,
             "module": module,
-            "doctype": None,  # heuristically filled in by caller if file sits in a doctype folder
+            "doctype": None,
             "file_path": file_path,
             "symbol_name": symbol,
             "unit_type": "api_endpoint" if is_whitelisted else unit_type,
             "language": "python",
-            "source_code": _get_source_segment(source_lines, node),
-            "docstring": ast.get_docstring(node),
+            "source_code": _node_text(source_bytes, source_node),
+            "docstring": _docstring(source_bytes, body),
             "decorators": decorators,
             "related_doctypes": [],
-            "dependencies": _extract_calls(node),
+            "dependencies": _extract_calls(source_bytes, body),
             "git_commit": git_commit,
             "indexed_at": indexed_at,
         })
 
-    for node in ast.iter_child_nodes(tree):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            handle_function(node, "function")
-        elif isinstance(node, ast.ClassDef):
+    for node in tree.root_node.named_children:
+        definition, decorators, source_node = _unwrap_definition(source_bytes, node)
+        if definition is None:
+            continue
+        if definition.type == "function_definition":
+            handle_function(definition, decorators, source_node, "function")
+        elif definition.type == "class_definition":
+            class_name = definition.child_by_field_name("name")
+            body = definition.child_by_field_name("body")
+            if not class_name or not body:
+                continue
+            class_name_text = _node_text(source_bytes, class_name)
             units.append({
                 "app_name": app_name,
                 "module": module,
                 "doctype": None,
                 "file_path": file_path,
-                "symbol_name": node.name,
+                "symbol_name": class_name_text,
                 "unit_type": "class",
                 "language": "python",
-                "source_code": _get_source_segment(source_lines, node),
-                "docstring": ast.get_docstring(node),
-                "decorators": [_decorator_name(d) for d in node.decorator_list],
+                "source_code": _node_text(source_bytes, source_node),
+                "docstring": _docstring(source_bytes, body),
+                "decorators": decorators,
                 "related_doctypes": [],
                 "dependencies": [],
                 "git_commit": git_commit,
                 "indexed_at": indexed_at,
             })
-            for child in node.body:
-                if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                    handle_function(child, "method", class_name=node.name)
+            for child in body.named_children:
+                method, method_decorators, method_source = _unwrap_definition(source_bytes, child)
+                if method and method.type == "function_definition":
+                    handle_function(method, method_decorators, method_source, "method", class_name_text)
 
     return units

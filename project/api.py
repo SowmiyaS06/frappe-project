@@ -1,9 +1,7 @@
-import time
+import os
 import json
 import frappe  # type: ignore[import-not-found]
-from google import genai
-import json
-
+from openai import OpenAI
 
 from project.retrieval.retriever import Retriever
 from project.retrieval.reranker import Reranker
@@ -34,7 +32,7 @@ def chat(message: str):
     )
 
     # --------------------------------------------------
-    # 2. BUILD CONTEXT FOR GEMINI
+    # 2. BUILD CONTEXT FOR LLM
     # --------------------------------------------------
 
     context_parts = []
@@ -85,21 +83,22 @@ Dependencies:
     retrieval_context = "\n\n---\n\n".join(context_parts)
 
     # --------------------------------------------------
-    # 3. GEMINI
+    # 3. OPENROUTER
     # --------------------------------------------------
 
-    api_key = frappe.conf.get("gemini_api_key")
+    api_key = frappe.conf.get("openrouter_api_key")
 
     if not api_key:
         return {
             "success": False,
-            "message": "Gemini API key is not configured."
+            "message": "OpenRouter API key is not configured."
         }
 
     try:
 
-        client = genai.Client(
-            api_key=api_key
+        client = OpenAI(
+            api_key=api_key,
+            base_url="https://openrouter.ai/api/v1"
         )
 
         system_instruction = """
@@ -126,6 +125,7 @@ Analyze whether the existing code can be:
 Explain the reasoning clearly.
 
 Mention relevant:
+
 - App
 - Module
 - DocType
@@ -152,58 +152,34 @@ Based on the requirement and the retrieved candidates,
 provide a reuse-oriented recommendation.
 """
 
-        response = None
+        # --------------------------------------------------
+        # 4. CALL OPENROUTER
+        # --------------------------------------------------
 
-        for attempt in range(3):
+        response = client.chat.completions.create(
+            model="openrouter/free",
+            messages=[
+                {
+                    "role": "system",
+                    "content": system_instruction
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
 
-            try:
-
-                response = client.models.generate_content(
-                    model="gemini-3.6-flash",
-                    contents=prompt,
-                    config={
-                        "system_instruction": system_instruction
-                    }
-                )
-
-                break
-
-            except Exception as e:
-
-                error_text = str(e)
-
-                is_temporary_error = (
-                    "503" in error_text
-                    or "UNAVAILABLE" in error_text.upper()
-                )
-
-                if is_temporary_error:
-
-                    if attempt < 2:
-                        time.sleep(1.5)
-                        continue
-
-                raise
-
-        if response is None:
-            return {
-                "success": False,
-                "message": (
-                    "Gemini is temporarily unavailable. "
-                    "Please try again."
-                )
-            }
-
-        reply = response.text
+        reply = response.choices[0].message.content
 
         if not reply:
             return {
                 "success": False,
-                "message": "Gemini returned an empty response."
+                "message": "OpenRouter returned an empty response."
             }
 
         # --------------------------------------------------
-        # 4. STORE QUERY + RETRIEVAL + GEMINI RESPONSE
+        # 5. STORE QUERY + RETRIEVAL + LLM RESPONSE
         # --------------------------------------------------
 
         frappe.get_doc({
@@ -222,7 +198,7 @@ provide a reuse-oriented recommendation.
         frappe.db.commit()
 
         # --------------------------------------------------
-        # 5. RETURN TO CHATBOT
+        # 6. RETURN TO CHATBOT
         # --------------------------------------------------
 
         return {
@@ -235,26 +211,10 @@ provide a reuse-oriented recommendation.
 
         frappe.log_error(
             frappe.get_traceback(),
-            "FrapAI Gemini Error"
+            "FrapAI OpenRouter Error"
         )
-
-        error_text = str(e)
-
-        if (
-            "503" in error_text
-            or "UNAVAILABLE" in error_text.upper()
-        ):
-            return {
-                "success": False,
-                "message": (
-                    "Gemini is currently experiencing high demand. "
-                    "Please try again in a moment. 😕"
-                )
-            }
 
         return {
             "success": False,
-            "message": (
-                "Sorry, I couldn't process your request right now. 😕"
-            )
+            "message": f"ERROR: {str(e)}"
         }

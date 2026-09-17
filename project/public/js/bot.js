@@ -17,39 +17,45 @@ console.log("FrapAI loaded!");
     const ROBOT_FRAMES = 13;
     const ROBOT_FRAME_PATH = "/assets/project/images/frame_";
 
+
     /* =========================================================
        REMOVE OLD CHATBOT
        Prevent duplicate chatbot after Desk navigation/reload
     ========================================================= */
 
-    const oldContainer = document.getElementById(CHATBOT_ID);
+    const oldContainer =
+        document.getElementById(CHATBOT_ID);
 
     if (oldContainer) {
         oldContainer.remove();
     }
 
-    const oldButton = document.getElementById(BUTTON_ID);
+    const oldButton =
+        document.getElementById(BUTTON_ID);
 
     if (oldButton) {
         oldButton.remove();
     }
 
-    const oldPanel = document.getElementById(PANEL_ID);
+    const oldPanel =
+        document.getElementById(PANEL_ID);
 
     if (oldPanel) {
         oldPanel.remove();
     }
 
+
     /* =========================================================
        MAIN CONTAINER
     ========================================================= */
 
-    const chatbotContainer = document.createElement("div");
+    const chatbotContainer =
+        document.createElement("div");
 
     chatbotContainer.id = CHATBOT_ID;
 
     chatbotContainer.innerHTML = `
-        <!-- ================================================
+        <!-- =================================================
              CHATBOT FLOATING BUTTON
         ================================================= -->
 
@@ -67,7 +73,7 @@ console.log("FrapAI loaded!");
         </button>
 
 
-        <!-- ================================================
+        <!-- =================================================
              CHATBOT PANEL
         ================================================= -->
 
@@ -77,9 +83,9 @@ console.log("FrapAI loaded!");
             aria-hidden="true"
         >
 
-            <!-- ============================================
+            <!-- =================================================
                  HEADER
-            ============================================= -->
+            ================================================= -->
 
             <div id="chatbot-header">
 
@@ -126,9 +132,9 @@ console.log("FrapAI loaded!");
             </div>
 
 
-            <!-- ============================================
+            <!-- =================================================
                  CHAT BODY
-            ============================================= -->
+            ================================================= -->
 
             <div id="chatbot-body">
 
@@ -148,9 +154,9 @@ console.log("FrapAI loaded!");
             </div>
 
 
-            <!-- ============================================
+            <!-- =================================================
                  INPUT AREA
-            ============================================= -->
+            ================================================= -->
 
             <div id="chatbot-input-area">
 
@@ -186,9 +192,11 @@ console.log("FrapAI loaded!");
        CSS
     ========================================================= */
 
-    const style = document.createElement("style");
+    const style =
+        document.createElement("style");
 
-    style.id = "frapai-chatbot-styles";
+    style.id =
+        "frapai-chatbot-styles";
 
     style.textContent = `
 
@@ -341,9 +349,11 @@ console.log("FrapAI loaded!");
 
         /* =====================================================
            MAXIMIZED STATE
-           
-           IMPORTANT:
-           There is NO manual edge/corner resizing here.
+
+           No manual edge/corner resizing.
+           Two fixed states:
+           1. Normal floating
+           2. Maximized
         ===================================================== */
 
         #chatbot-panel.frapai-maximized {
@@ -352,9 +362,6 @@ console.log("FrapAI loaded!");
             right: 35px;
             bottom: 35px;
 
-            /*
-                Leave space for Frappe Desk sidebar.
-            */
             left: 275px;
 
             width: auto;
@@ -621,9 +628,6 @@ console.log("FrapAI loaded!");
 
         /* =====================================================
            USER MESSAGE BUBBLE
-
-           IMPORTANT:
-           This keeps user messages compact.
         ===================================================== */
 
         .frapai-user-bubble {
@@ -810,6 +814,47 @@ console.log("FrapAI loaded!");
             background: #e9edf3;
 
             color: #555;
+        }
+
+
+        .frapai-table-wrapper {
+
+            overflow-x: auto;
+
+            margin: 12px 0;
+        }
+
+
+        .frapai-markdown-table {
+
+            width: 100%;
+
+            border-collapse: collapse;
+
+            font-size: 13px;
+        }
+
+
+        .frapai-markdown-table th,
+        .frapai-markdown-table td {
+
+            padding: 8px 10px;
+
+            border: 1px solid #d5d5d5;
+
+            text-align: left;
+
+            vertical-align: top;
+        }
+
+
+        .frapai-markdown-table th {
+
+            background: #e9edf3;
+
+            color: #333;
+
+            font-weight: 650;
         }
 
 
@@ -1224,56 +1269,6 @@ console.log("FrapAI loaded!");
 
 
         /* =====================================================
-           RECOMMENDATIONS
-        ===================================================== */
-
-        .frapai-recommendations {
-
-            margin-top: 12px;
-
-            display: flex;
-
-            flex-direction: column;
-
-            gap: 8px;
-        }
-
-
-        .frapai-recommendation {
-
-            padding:
-                11px 13px;
-
-            border:
-                1px solid #dce1e7;
-
-            border-radius: 9px;
-
-            background: #ffffff;
-        }
-
-
-        .frapai-recommendation-title {
-
-            font-weight: 600;
-
-            color: #333;
-
-            margin-bottom: 4px;
-        }
-
-
-        .frapai-recommendation-reason {
-
-            color: #666;
-
-            font-size: 12px;
-
-            line-height: 1.45;
-        }
-
-
-        /* =====================================================
            MOBILE
         ===================================================== */
 
@@ -1374,14 +1369,29 @@ console.log("FrapAI loaded!");
        ELEMENT REFERENCES
     ========================================================= */
 
-    const panel = document.getElementById(PANEL_ID);
-    const button = document.getElementById(BUTTON_ID);
-    const closeButton = document.getElementById("chatbot-close");
-    const maximizeButton = document.getElementById("chatbot-maximize");
-    const messages = document.getElementById(MESSAGES_ID);
-    const input = document.getElementById(INPUT_ID);
-    const sendButton = document.getElementById(SEND_ID);
-    const robotImage = document.getElementById("chatbot-button-image");
+    const panel =
+        document.getElementById(PANEL_ID);
+
+    const button =
+        document.getElementById(BUTTON_ID);
+
+    const closeButton =
+        document.getElementById("chatbot-close");
+
+    const maximizeButton =
+        document.getElementById("chatbot-maximize");
+
+    const messages =
+        document.getElementById(MESSAGES_ID);
+
+    const input =
+        document.getElementById(INPUT_ID);
+
+    const sendButton =
+        document.getElementById(SEND_ID);
+
+    const robotImage =
+        document.getElementById("chatbot-button-image");
 
 
     /* =========================================================
@@ -1442,7 +1452,11 @@ console.log("FrapAI loaded!");
             return;
         }
 
-        if (panel.classList.contains("frapai-open")) {
+        if (
+            panel.classList.contains(
+                "frapai-open"
+            )
+        ) {
 
             closeChatbot();
 
@@ -1486,11 +1500,6 @@ console.log("FrapAI loaded!");
 
     /* =========================================================
        MAXIMIZE / RESTORE
-
-       NO RESIZING.
-       ONLY TWO FIXED STATES:
-       1. Normal floating
-       2. Maximized
     ========================================================= */
 
     maximizeButton.addEventListener(
@@ -1511,7 +1520,8 @@ console.log("FrapAI loaded!");
                     "frapai-maximized"
                 );
 
-                maximizeButton.textContent = "⛶";
+                maximizeButton.textContent =
+                    "⛶";
 
                 maximizeButton.setAttribute(
                     "aria-label",
@@ -1529,7 +1539,8 @@ console.log("FrapAI loaded!");
                     "frapai-maximized"
                 );
 
-                maximizeButton.textContent = "❐";
+                maximizeButton.textContent =
+                    "❐";
 
                 maximizeButton.setAttribute(
                     "aria-label",
@@ -1571,16 +1582,34 @@ console.log("FrapAI loaded!");
 
     function escapeHtml(value) {
 
-        if (value === null || value === undefined) {
+        if (
+            value === null ||
+            value === undefined
+        ) {
             return "";
         }
 
         return String(value)
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+            .replace(
+                /&/g,
+                "&amp;"
+            )
+            .replace(
+                /</g,
+                "&lt;"
+            )
+            .replace(
+                />/g,
+                "&gt;"
+            )
+            .replace(
+                /"/g,
+                "&quot;"
+            )
+            .replace(
+                /'/g,
+                "&#039;"
+            );
     }
 
 
@@ -1591,7 +1620,10 @@ console.log("FrapAI loaded!");
     function escapeAttribute(value) {
 
         return escapeHtml(value)
-            .replace(/`/g, "&#096;");
+            .replace(
+                /`/g,
+                "&#096;"
+            );
     }
 
 
@@ -1608,10 +1640,12 @@ console.log("FrapAI loaded!");
             return "";
         }
 
-        let text = String(markdown);
+        let text =
+            String(markdown);
+
 
         /*
-         * First protect fenced code blocks.
+         * Protect fenced code blocks.
          */
 
         const codeBlocks = [];
@@ -1647,7 +1681,91 @@ console.log("FrapAI loaded!");
          * Escape everything else.
          */
 
-        text = escapeHtml(text);
+        text =
+            escapeHtml(text);
+
+
+        /*
+         * GitHub-flavored Markdown tables. Cells are rendered only after
+         * the full response has been escaped, then protected with tokens so
+         * later paragraph/newline handling cannot alter the table markup.
+         */
+
+        const tables = [];
+
+        function splitTableRow(row) {
+
+            let value = row.trim();
+
+            if (value.startsWith("|")) {
+                value = value.slice(1);
+            }
+
+            if (value.endsWith("|")) {
+                value = value.slice(0, -1);
+            }
+
+            return value.split("|").map(function (cell) {
+
+                return cell.trim();
+            });
+        }
+
+        function isTableSeparator(row) {
+
+            return /^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(row);
+        }
+
+        const tableLines = text.split("\n");
+        const renderedLines = [];
+
+        for (let lineIndex = 0; lineIndex < tableLines.length; lineIndex += 1) {
+
+            const header = tableLines[lineIndex];
+            const separator = tableLines[lineIndex + 1];
+
+            if (!header.includes("|") || !separator || !isTableSeparator(separator)) {
+                renderedLines.push(header);
+                continue;
+            }
+
+            const headers = splitTableRow(header);
+            const rows = [];
+            lineIndex += 2;
+
+            while (lineIndex < tableLines.length && tableLines[lineIndex].trim() && tableLines[lineIndex].includes("|")) {
+                rows.push(splitTableRow(tableLines[lineIndex]));
+                lineIndex += 1;
+            }
+
+            lineIndex -= 1;
+
+            const tableIndex = tables.length;
+            const head = headers.map(function (cell) {
+
+                return `<th>${cell}</th>`;
+            }).join("");
+            const body = rows.map(function (row) {
+
+                return `<tr>${headers.map(function (_, columnIndex) {
+
+                    return `<td>${row[columnIndex] || ""}</td>`;
+                }).join("")}</tr>`;
+            }).join("");
+
+            tables.push(`
+                <div class="frapai-table-wrapper">
+                    <table class="frapai-markdown-table">
+                        <thead><tr>${head}</tr></thead>
+                        <tbody>${body}</tbody>
+                    </table>
+                </div>
+            `);
+
+            renderedLines.push(`@@FRAPAI_TABLE_${tableIndex}@@`);
+        }
+
+        text = renderedLines.join("\n");
 
 
         /*
@@ -1863,7 +1981,10 @@ console.log("FrapAI loaded!");
          */
 
         codeBlocks.forEach(
-            function (block, index) {
+            function (
+                block,
+                index
+            ) {
 
                 const safeCode =
                     escapeHtml(
@@ -1964,9 +2085,21 @@ console.log("FrapAI loaded!");
                     </div>
                 `;
 
+                text =
+                    text.replace(
+                        `@@FRAPAI_CODE_${index}@@`,
+                        codeHtml
+                    );
+            }
+        );
+
+
+        tables.forEach(
+            function (table, index) {
+
                 text = text.replace(
-                    `@@FRAPAI_CODE_${index}@@`,
-                    codeHtml
+                    `@@FRAPAI_TABLE_${index}@@`,
+                    table
                 );
             }
         );
@@ -1985,13 +2118,13 @@ console.log("FrapAI loaded!");
             !text.includes("<ol>") &&
             !text.includes("<blockquote>") &&
             !text.includes("<hr>") &&
+            !text.includes("frapai-table-wrapper") &&
             !text.includes("frapai-code-wrapper")
         ) {
 
             text =
                 `<p>${text}</p>`;
         }
-
 
         return text;
     }
@@ -2117,114 +2250,109 @@ console.log("FrapAI loaded!");
 
 
     /* =========================================================
-       ADD RECOMMENDATIONS
+       SIMPLE GREETING HANDLER
     ========================================================= */
 
-    function addRecommendations(
-        recommendations
-    ) {
+    function getGreetingResponse(message) {
 
-        if (
-            !Array.isArray(
-                recommendations
-            ) ||
-            recommendations.length === 0
-        ) {
-            return;
-        }
+        const text =
+            String(message || "")
+                .trim()
+                .toLowerCase()
+                .replace(
+                    /[!,.?]+$/g,
+                    ""
+                );
 
+        const greetings = {
 
-        const row =
-            document.createElement("div");
+            "hi":
+                "Hello! 👋 How can I help you with Frappe or ERPNext?",
 
-        row.className =
-            "frapai-message frapai-bot-message";
+            "hello":
+                "Hello! 👋 How can I help you with Frappe or ERPNext?",
 
+            "hey":
+                "Hey! 👋 How can I help you with Frappe or ERPNext?",
 
-        const container =
-            document.createElement("div");
+            "good morning":
+                "Good morning! ☀️ How can I help you with Frappe or ERPNext?",
 
-        container.className =
-            "frapai-bot-bubble frapai-recommendations";
+            "good afternoon":
+                "Good afternoon! How can I help you with Frappe or ERPNext?",
 
+            "good evening":
+                "Good evening! How can I help you with Frappe or ERPNext?"
+        };
 
-        recommendations.forEach(
-            function (item) {
-
-                if (!item) {
-                    return;
-                }
-
-                /*
-                 * Support different backend response shapes.
-                 */
-
-                const name =
-                    item.name ||
-                    item.app_name ||
-                    item.title ||
-                    item.symbol_name ||
-                    item.doctype ||
-                    "Recommendation";
+        return greetings[text] || null;
+    }
 
 
-                const reason =
-                    item.reason ||
-                    item.description ||
-                    item.module ||
-                    item.file_path ||
-                    "";
+    /* =========================================================
+       CHECK FRAPPE / ERPNEXT QUESTION
+    ========================================================= */
 
+    function isFrappeERPNextQuestion(message) {
 
-                const card =
-                    document.createElement("div");
+        const text =
+            String(message || "")
+                .toLowerCase();
 
-                card.className =
-                    "frapai-recommendation";
+        const keywords = [
 
+            "frappe",
+            "erpnext",
+            "doctype",
+            "doc type",
+            "frappe framework",
+            "frappe app",
+            "frappe site",
+            "frappe bench",
+            "bench",
+            "frappe api",
+            "frappe client",
+            "frappe server",
+            "frappe hook",
+            "hooks.py",
+            "frappe orm",
+            "frappe database",
+            "frappe.db",
+            "frappe.get_doc",
+            "frappe.get_all",
+            "frappe.get_list",
+            "frappe.call",
+            "frappe.whitelist",
+            "frappe ui",
+            "frappe desk",
+            "frappe web",
+            "erpnext module",
+            "erpnext app",
+            "erpnext doctype",
+            "erpnext customization",
+            "child table",
+            "script report",
+            "query report",
+            "client script",
+            "server script",
+            "workspace",
+            "doctype field",
+            "naming series",
+            "web form",
+            "web page",
+            "python",
+            "javascript",
+            "js",
+            "sql",
+            "html",
+            "css"
+        ];
 
-                const title =
-                    document.createElement("div");
-
-                title.className =
-                    "frapai-recommendation-title";
-
-                title.textContent =
-                    name;
-
-
-                const reasonElement =
-                    document.createElement("div");
-
-                reasonElement.className =
-                    "frapai-recommendation-reason";
-
-                reasonElement.textContent =
-                    reason;
-
-
-                card.appendChild(title);
-
-
-                if (reason) {
-
-                    card.appendChild(
-                        reasonElement
-                    );
-                }
-
-
-                container.appendChild(card);
-
+        return keywords.some(
+            function (keyword) {
+                return text.includes(keyword);
             }
         );
-
-
-        row.appendChild(container);
-
-        messages.appendChild(row);
-
-        scrollChat();
     }
 
 
@@ -2240,8 +2368,7 @@ console.log("FrapAI loaded!");
         ) {
 
             return {
-                reply: "",
-                recommendations: []
+                reply: ""
             };
         }
 
@@ -2259,7 +2386,8 @@ console.log("FrapAI loaded!");
 
 
         /*
-         * Sometimes backend returns a JSON string.
+         * Sometimes backend returns
+         * a JSON string.
          */
 
         if (typeof data === "string") {
@@ -2272,15 +2400,23 @@ console.log("FrapAI loaded!");
             } catch (error) {
 
                 return {
-                    reply: data,
-                    recommendations: []
+                    reply: data
                 };
             }
         }
 
 
         /*
-         * Different possible response keys.
+         * Backend currently returns:
+         *
+         * {
+         *     success: true,
+         *     message: reply,
+         *     recommendations: ranked
+         * }
+         *
+         * We intentionally ignore
+         * recommendations here.
          */
 
         const reply =
@@ -2290,23 +2426,11 @@ console.log("FrapAI loaded!");
             data.message ||
             "";
 
-
-        const recommendations =
-            data.recommendations ||
-            data.results ||
-            [];
-
-
         return {
-            reply:
-                String(reply),
 
-            recommendations:
-                Array.isArray(
-                    recommendations
-                )
-                    ? recommendations
-                    : []
+            reply:
+                String(reply)
+
         };
     }
 
@@ -2347,6 +2471,43 @@ console.log("FrapAI loaded!");
         autoResizeInput();
 
 
+        /* =====================================================
+           SIMPLE GREETING
+        ===================================================== */
+
+        const greetingResponse =
+            getGreetingResponse(message);
+
+        if (greetingResponse) {
+
+            addBotMessage(
+                greetingResponse
+            );
+
+            input.focus();
+
+            return;
+        }
+
+
+        /* =====================================================
+           OUT-OF-SCOPE QUESTION
+        ===================================================== */
+
+        if (
+            !isFrappeERPNextQuestion(message)
+        ) {
+
+            addBotMessage(
+                "I’m FrapAI, focused on Frappe Framework and ERPNext. Please ask me a question related to Frappe, ERPNext, or the code in this Frappe bench."
+            );
+
+            input.focus();
+
+            return;
+        }
+
+
         /*
          * Disable send while waiting.
          */
@@ -2383,7 +2544,9 @@ console.log("FrapAI loaded!");
                             },
 
                             callback:
-                                function (response) {
+                                function (
+                                    response
+                                ) {
 
                                     resolve(
                                         response
@@ -2415,11 +2578,24 @@ console.log("FrapAI loaded!");
                 );
 
 
+            /*
+             * Display ONLY the Gemini
+             * formatted response.
+             *
+             * Retrieved Top-K candidates
+             * are stored by the backend in
+             * Logic Reuse.retrieved_candidates.
+             *
+             * They are NOT displayed as
+             * recommendation cards.
+             */
+
             if (result.reply) {
 
                 addBotMessage(
                     result.reply
                 );
+
             } else {
 
                 addBotMessage(
@@ -2427,16 +2603,6 @@ console.log("FrapAI loaded!");
                 );
             }
 
-
-            if (
-                result.recommendations &&
-                result.recommendations.length
-            ) {
-
-                addRecommendations(
-                    result.recommendations
-                );
-            }
 
         } catch (error) {
 
@@ -2498,7 +2664,7 @@ console.log("FrapAI loaded!");
 
     /* =========================================================
        ENTER KEY
-       
+
        Enter = Send
        Shift + Enter = New line
     ========================================================= */
@@ -2530,10 +2696,8 @@ console.log("FrapAI loaded!");
             return;
         }
 
-
         input.style.height =
             "auto";
-
 
         input.style.height =
             Math.min(
@@ -2673,7 +2837,11 @@ console.log("FrapAI loaded!");
                 );
 
 
-            if (!code || !editor || !editActions) {
+            if (
+                !code ||
+                !editor ||
+                !editActions
+            ) {
                 return;
             }
 
